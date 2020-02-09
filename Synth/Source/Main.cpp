@@ -9,11 +9,11 @@
 #include <JuceHeader.h>
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//#include "SynthUsingMidiInputTutorial_01.h"
+#include "SynthUsingMidiInputTutorial_01.h"
 //#include "WavetableSynthTutorial_01.h"
 //#include "WavetableSynthTutorial_02.h"
 //#include "WavetableSynthTutorial_03.h"
-#include "WavetableSynthTutorial_04.h"
+//#include "WavetableSynthTutorial_04.h"
 
 class Application    : public JUCEApplication
 {
