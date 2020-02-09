@@ -69,7 +69,7 @@ struct SineWaveVoice   : public SynthesiserVoice
     void startNote (int midiNoteNumber, float velocity,
                     SynthesiserSound*, int /*currentPitchWheelPosition*/) override
     {
-        currentAngle = 0.0;
+        currentAngle = 0;
         level = velocity * 0.15;
         tailOff = 0.0;
 
@@ -197,7 +197,8 @@ public:
         addAndMakeVisible (keyboardComponent);
         setAudioChannels (0, 2);
 
-        setSize (600, 160);
+            // change the size of keyboard
+        setSize (1000, 300);
         startTimer (400);
     }
 
@@ -208,7 +209,7 @@ public:
 
     void resized() override
     {
-        keyboardComponent.setBounds (10, 10, getWidth() - 20, getHeight() - 20);
+        keyboardComponent.setBounds (20, 15, getWidth() - 20, getHeight() - 20);
     }
 
     void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override
