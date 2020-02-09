@@ -46,8 +46,7 @@
 
 
 #pragma once
-
-#include "LowPassFilter.h"
+//#include "LowPassFilter.h"
 //==============================================================================
 struct SquareSound : public SynthesiserSound
 {
@@ -59,7 +58,15 @@ struct SquareSound : public SynthesiserSound
 
 struct SquareVoice : public SynthesiserVoice
 {
-	SquareVoice() {}
+	SquareVoice() :
+		port("COM3"),
+		output(&port)
+	{
+	}
+
+	~SquareVoice() {
+		port.close();
+	}
 
 	bool canPlaySound(SynthesiserSound* sound) override
 	{
@@ -104,7 +111,9 @@ struct SquareVoice : public SynthesiserVoice
 			{
 				while (--numSamples >= 0)
 				{
+					auto currentWave = sgn(std::sin(currentAngle));
 					auto currentSample = (float)(sgn(std::sin(currentAngle)) * level * tailOff);
+					output.write((uint8_t*)&currentWave, sizeof(uint8_t));
 
 					for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
 						outputBuffer.addSample(i, startSample, currentSample);
@@ -144,6 +153,8 @@ struct SquareVoice : public SynthesiserVoice
 	}
 
 private:
+	SerialPort port;
+	SerialPortOutputStream output;
 	double currentAngle = 0.0, angleDelta = 0.0, level = 0.0, tailOff = 0.0;
 };
 struct SineWaveSound   : public SynthesiserSound
@@ -157,7 +168,11 @@ struct SineWaveSound   : public SynthesiserSound
 //==============================================================================
 struct SineWaveVoice   : public SynthesiserVoice
 {
-    SineWaveVoice() {}
+    SineWaveVoice()
+	{
+		//SerialPort port("COM3", 9600);
+		//port.Open();
+	}
 
     bool canPlaySound (SynthesiserSound* sound) override
     {
