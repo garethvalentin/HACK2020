@@ -162,7 +162,7 @@ public:
             auto* oscillator = new WavetableOscillator (sineTable);
 
             auto midiNote = Random::getSystemRandom().nextDouble() * 36.0 + 48.0;
-            auto frequency = 440.0 * pow (2.0, (midiNote - 69.0) / 12.0);
+            auto frequency = 100.0 * pow (2.0, (midiNote - 69.0) / 12.0);
 
             oscillator->setFrequency ((float) frequency, (float) sampleRate);
             oscillators.add (oscillator);
