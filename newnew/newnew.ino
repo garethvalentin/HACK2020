@@ -117,6 +117,6 @@ void loop() {
 
   //Serial.print(x_value - x_init);
   //Serial.print("  mmm  ");
-  //Serial.println(y_value - y_init);
+  Serial.println(y_value);
  
 }

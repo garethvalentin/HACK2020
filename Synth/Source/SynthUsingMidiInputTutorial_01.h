@@ -58,14 +58,11 @@ struct SquareSound : public SynthesiserSound
 
 struct SquareVoice : public SynthesiserVoice
 {
-	SquareVoice() :
-		port("COM3"),
-		output(&port)
+	SquareVoice()
 	{
 	}
 
 	~SquareVoice() {
-		port.close();
 	}
 
 	bool canPlaySound(SynthesiserSound* sound) override
@@ -113,7 +110,7 @@ struct SquareVoice : public SynthesiserVoice
 				{
 					auto currentWave = sgn(std::sin(currentAngle));
 					auto currentSample = (float)(sgn(std::sin(currentAngle)) * level * tailOff);
-					output.write((uint8_t*)&currentWave, sizeof(uint8_t));
+
 
 					for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
 						outputBuffer.addSample(i, startSample, currentSample);
@@ -153,8 +150,6 @@ struct SquareVoice : public SynthesiserVoice
 	}
 
 private:
-	SerialPort port;
-	SerialPortOutputStream output;
 	double currentAngle = 0.0, angleDelta = 0.0, level = 0.0, tailOff = 0.0;
 };
 struct SineWaveSound   : public SynthesiserSound
@@ -308,7 +303,9 @@ public:
     MainContentComponent()
         : synthAudioSource  (keyboardState),
           keyboardComponent (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
-			filterSource(&synthAudioSource, false)
+			filterSource(&synthAudioSource, false),
+			port("COM3"),
+			input(&port)
     {
         addAndMakeVisible (keyboardComponent);
         setAudioChannels (0, 2);
@@ -357,14 +354,18 @@ public:
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
     {
         //synthAudioSource.getNextAudioBlock (bufferToFill);
-		std::thread update(&MainContentComponent::updateSlider, this);
+		updateSlider();
 		filterSource.getNextAudioBlock(bufferToFill);
-		update.join();
     }
 
 	void updateSlider() {
-		const ScopedLock myScopedLock(section);
+		//const ScopedLock myScopedLock(section);
 		printf("%f\n", filterCutoffDial.getValue());
+
+		int controls;
+		auto controlval = controls * 16 + 20.0;
+
+		filterCutoffDial.setValue(controlval);
 		if (filterCutoffDial.getValue() <= 0.0)
 			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, 20.0));
 		else
@@ -374,6 +375,7 @@ public:
 
     void releaseResources() override
     {
+		port.close();
 		filterSource.releaseResources();
 		synthAudioSource.releaseResources();
     }
@@ -392,6 +394,8 @@ private:
     void timerCallback() override
     {
         keyboardComponent.grabKeyboardFocus();
+
+		//filterCutoffDial.setValue(controlval);
         stopTimer();
     }
 
@@ -405,6 +409,8 @@ private:
 	Label cutoffLabel;
 	CriticalSection section;
 	float lastSampleRate;
+	SerialPort port;
+	SerialPortInputStream input;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
