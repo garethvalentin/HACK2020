@@ -258,6 +258,7 @@ public:
     SynthAudioSource (MidiKeyboardState& keyState)
         : keyboardState (keyState)
     {
+
         for (auto i = 0; i < 4; ++i)                // [1]
             synth.addVoice (new SquareVoice());
 
@@ -360,16 +361,16 @@ public:
 
 	void updateSlider() {
 		//const ScopedLock myScopedLock(section);
-		printf("%f\n", filterCutoffDial.getValue());
+		
 
 		int controls;
-		auto controlval = controls * 16 + 20.0;
-
-		filterCutoffDial.setValue(controlval);
+		controls = input.readNextLine().getIntValue();
+		auto controlval = controls + 500.0;
+		printf("%f\n", controlval);
 		if (filterCutoffDial.getValue() <= 0.0)
-			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, 20.0));
+			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, 20.0, 50.0));
 		else
-			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, filterCutoffDial.getValue()));
+			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, controlval, 50.0));
 
 	}
 
