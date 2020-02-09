@@ -46,6 +46,8 @@
 
 
 #pragma once
+
+#include "LowPassFilter.h"
 //==============================================================================
 struct SquareSound : public SynthesiserSound
 {
@@ -102,7 +104,7 @@ struct SquareVoice : public SynthesiserVoice
 			{
 				while (--numSamples >= 0)
 				{
-					auto currentSample = (float)(std::sin(currentAngle) * level * tailOff);
+					auto currentSample = (float)(sgn(std::sin(currentAngle)) * level * tailOff);
 
 					for (auto i = outputBuffer.getNumChannels(); --i >= 0;)
 						outputBuffer.addSample(i, startSample, currentSample);
@@ -284,15 +286,26 @@ private:
 //==============================================================================
 class MainContentComponent   : public AudioAppComponent,
                                private Timer
+								//public AsyncUpdater,
+								//public Slider::Listener
 {
 public:
     MainContentComponent()
         : synthAudioSource  (keyboardState),
-          keyboardComponent (keyboardState, MidiKeyboardComponent::horizontalKeyboard)
+          keyboardComponent (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+			filterSource(&synthAudioSource, false)
     {
         addAndMakeVisible (keyboardComponent);
         setAudioChannels (0, 2);
 
+		addAndMakeVisible(cutoffLabel);
+		cutoffLabel.setText("Frequency", dontSendNotification);
+		cutoffLabel.attachToComponent(&filterCutoffDial, true);
+		addAndMakeVisible(filterCutoffDial);
+		filterCutoffDial.setAlwaysOnTop(true);
+		filterCutoffDial.setRange(20.0, 20000.0, 1.0);
+		filterCutoffDial.setValue(20000.0);
+		//filterCutoffDial.addListener(this);
             // change the size of keyboard
         setSize (1000, 300);
         startTimer (400);
@@ -305,24 +318,61 @@ public:
 
     void resized() override
     {
-        keyboardComponent.setBounds (20, 15, getWidth() - 20, getHeight() - 20);
+		filterCutoffDial.setBounds(200, 10, getWidth() - 210, 20);
+		keyboardComponent.setBounds(10, 40, getWidth() - 20, getHeight() - 50);
     }
+	/*
+	void sliderValueChanged(Slider* slider) override
+	{
+		if (slider == &filterCutoffDial)
+			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, slider->getValue()));
+			
+	}
+	*/
+
 
     void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override
     {
-        synthAudioSource.prepareToPlay (samplesPerBlockExpected, sampleRate);
+        //synthAudioSource.prepareToPlay (samplesPerBlockExpected, sampleRate);
+		lastSampleRate = sampleRate;
+		filterSource.setCoefficients(IIRCoefficients::makeLowPass(sampleRate, 20000));
+		filterSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
     }
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
     {
-        synthAudioSource.getNextAudioBlock (bufferToFill);
+        //synthAudioSource.getNextAudioBlock (bufferToFill);
+		std::thread update(&MainContentComponent::updateSlider, this);
+		filterSource.getNextAudioBlock(bufferToFill);
+		update.join();
     }
+
+	void updateSlider() {
+		const ScopedLock myScopedLock(section);
+		printf("%f\n", filterCutoffDial.getValue());
+		if (filterCutoffDial.getValue() <= 0.0)
+			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, 20.0));
+		else
+			filterSource.setCoefficients(IIRCoefficients::makeLowPass(lastSampleRate, filterCutoffDial.getValue()));
+
+	}
 
     void releaseResources() override
     {
-        synthAudioSource.releaseResources();
+		filterSource.releaseResources();
+		synthAudioSource.releaseResources();
     }
-
+	/*
+	void handleAsyncUpdate() override
+	{
+		updateSlider();
+	}
+	void sliderValueChanged(Slider * slider)
+	{
+		if (slider == &filterCutoffDial)
+			triggerAsyncUpdate();
+	}
+	*/
 private:
     void timerCallback() override
     {
@@ -332,8 +382,14 @@ private:
 
     //==========================================================================
     SynthAudioSource synthAudioSource;
+	IIRFilterAudioSource filterSource;
     MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboardComponent;
+	Slider filterCutoffDial;
+	Slider filterResDial;
+	Label cutoffLabel;
+	CriticalSection section;
+	float lastSampleRate;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
