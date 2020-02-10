@@ -14,6 +14,12 @@
 //#include "WavetableSynthTutorial_02.h"
 //#include "WavetableSynthTutorial_03.h"
 //#include "WavetableSynthTutorial_04.h"
+<<<<<<< HEAD
+=======
+
+//using namespace System;
+//using namespace System::IO::Ports;
+>>>>>>> 28e3792082f6fab3804f340a4d786222667b3813
 
 class Application    : public JUCEApplication
 {
